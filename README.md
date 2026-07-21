@@ -25,29 +25,47 @@ A production-oriented REST API for creating, managing, and tracking shortened UR
 
 ## How It Works
 
+### Request Lifecycle
+
+This diagram covers only the core API workflow, from receiving a request to returning the final HTTP response.
+
 ```mermaid
-flowchart TD
-    subgraph Creation["Short URL Creation"]
-        A["POST /api/urls"] --> B["Validate request DTO"]
-        B --> C{"Custom alias provided?"}
-        C -- Yes --> D["Check alias availability"]
-        C -- No --> E["Generate unique short code"]
-        D --> F["Create URL record"]
-        E --> F
-        F --> G["Save with TypeORM"]
-        G --> H["Neon PostgreSQL"]
-        H --> I["Return 201 Created with short URL"]
+sequenceDiagram
+    autonumber
+
+    actor Client
+    participant API as NestJS URL Shortener
+    participant DB as Neon PostgreSQL
+
+    Note over Client,DB: Create a Short URL
+
+    Client->>API: POST /api/urls
+    API->>API: Validate DTO and resolve short code
+    API->>DB: Check short-code uniqueness
+    DB-->>API: Availability result
+
+    alt Short code already exists
+        API-->>Client: 409 Conflict
+    else Short code is available
+        API->>DB: Save URL record
+        DB-->>API: Created record
+        API-->>Client: 201 Created with shortUrl
     end
 
-    subgraph Redirect["URL Redirect"]
-        J["GET /:shortCode"] --> K["Find URL record"]
-        K --> L{"URL exists and is active?"}
-        L -- No --> M["Return 404 Not Found"]
-        L -- Yes --> N{"URL expired?"}
-        N -- Yes --> O["Return 410 Gone"]
-        N -- No --> P["Increment click count"]
-        P --> Q["Return 302 Redirect"]
-        Q --> R["Open original URL"]
+    Note over Client,DB: Resolve a Short URL
+
+    Client->>API: GET /:shortCode
+    API->>DB: Find active URL record
+    DB-->>API: URL record or null
+
+    alt URL not found
+        API-->>Client: 404 Not Found
+    else URL expired
+        API-->>Client: 410 Gone
+    else URL is valid
+        API->>DB: Increment click count
+        DB-->>API: Click recorded
+        API-->>Client: 302 Found with Location header
     end
 ```
 
