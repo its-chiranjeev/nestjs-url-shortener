@@ -62,6 +62,7 @@ import * as Joi from 'joi';
         migrationsRun: false,
       }),
     }),
+    UrlsModule,
   ],
 })
 export class AppModule {}
