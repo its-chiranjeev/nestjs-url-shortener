@@ -110,7 +110,7 @@ npm install
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and provide your own values:
+ Create `.env` and provide your own values:
 
 ```env
 NODE_ENV=development
