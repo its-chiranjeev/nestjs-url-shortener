@@ -23,6 +23,34 @@ A production-oriented REST API for creating, managing, and tracking shortened UR
 - Explore and test endpoints through Swagger UI
 - Run unit and HTTP endpoint tests with Jest and Supertest
 
+## How It Works
+
+```mermaid
+flowchart TD
+    subgraph Creation["Short URL Creation"]
+        A["POST /api/urls"] --> B["Validate request DTO"]
+        B --> C{"Custom alias provided?"}
+        C -- Yes --> D["Check alias availability"]
+        C -- No --> E["Generate unique short code"]
+        D --> F["Create URL record"]
+        E --> F
+        F --> G["Save with TypeORM"]
+        G --> H["Neon PostgreSQL"]
+        H --> I["Return 201 Created with short URL"]
+    end
+
+    subgraph Redirect["URL Redirect"]
+        J["GET /:shortCode"] --> K["Find URL record"]
+        K --> L{"URL exists and is active?"}
+        L -- No --> M["Return 404 Not Found"]
+        L -- Yes --> N{"URL expired?"}
+        N -- Yes --> O["Return 410 Gone"]
+        N -- No --> P["Increment click count"]
+        P --> Q["Return 302 Redirect"]
+        Q --> R["Open original URL"]
+    end
+```
+
 ## Technology Stack
 
 - **Runtime:** Node.js
